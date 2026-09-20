@@ -115,7 +115,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (match) {
                 // 安全解析数组内容
                 const arrayContent = match[1];
-                const urls = arrayContent.match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
+                // 兼容单引号与双引号两种格式（greendam.icu 曾更换过引号风格）
+                const urls = arrayContent.match(/["']([^"']+)["']/g)?.map(s => s.slice(1, -1)) || [];
                 if (urls.length > 0) {
                     xiaoluImages = urls;
                     console.log(`%c✅ 已加载 greendam.icu 图库，共 ${urls.length} 张图片`, 'color: #228B22;');

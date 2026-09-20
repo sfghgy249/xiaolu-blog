@@ -195,7 +195,8 @@
                 const match = text.match(/const IMAGES = \[([\s\S]*?)\];/);
                 if (match) {
                     const arrayContent = match[1];
-                    allImages = arrayContent.match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
+                    // 兼容单引号与双引号两种格式（greendam.icu 曾更换过引号风格）
+                    allImages = arrayContent.match(/["']([^"']+)["']/g)?.map(s => s.slice(1, -1)) || [];
                     renderGallery();
                 }
             } catch (e) {
