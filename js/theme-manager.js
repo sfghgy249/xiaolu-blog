@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // 切换主题
     function setTheme(themeId) {
         // 移除所有主题类
-        document.body.classList.remove('theme-vaporwave', 'theme-frutiger', 'theme-win98', 'theme-pixel');
+        document.body.classList.remove('theme-vaporwave', 'theme-frutiger', 'theme-win98', 'theme-pixel', 'theme-deepsea', 'theme-sakura', 'theme-cyber');
         // 添加选中主题类（green是默认，不需要class）
         if (themeId && themeId !== 'green') {
             document.body.classList.add(`theme-${themeId}`);
