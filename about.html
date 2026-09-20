@@ -238,7 +238,7 @@
                 const text = await response.text();
                 const match = text.match(/const IMAGES = \[([\s\S]*?)\];/);
                 if (match) {
-                    const allImages = match[1].match(/'([^']+)'/g)?.map(s => s.slice(1, -1)) || [];
+                    const allImages = match[1].match(/["']([^"']+)["']/g)?.map(s => s.slice(1, -1)) || [];
                     // 筛选包含"生日"或"贺图"的图片
                     const birthdayImages = allImages.filter(img => img.includes('生日') || img.includes('贺图'));
                     if (birthdayImages.length > 0) {
