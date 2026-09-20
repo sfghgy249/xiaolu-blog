@@ -28,9 +28,7 @@
     <nav class="navbar" id="navbar">
         <div class="nav-container">
             <ul id="main-navbar">
-                <li v-for="item in list" :key="item.id">
-                    <a :href="item.url" :class="{ active: item.url === currentPage }" v-text ="item.title">加载中......</a>
-                </li>
+                <!-- 由 js/navbar.js 动态加载 -->
             </ul>
         </div>
     </nav>
@@ -49,105 +47,13 @@
                 </div>
             </div>
 
-            <!-- 文章列表 -->
-            <article class="post-card">
-                <div class="post-thumbnail">🌸</div>
-                <div class="post-content">
-                    <span class="post-date">2026-07-23</span>
-                    <h2 class="post-title">博客重新开张啦！</h2>
-                    <p class="post-excerpt">
-                        好久不见！经过一番精心准备，小绿的新博客终于和大家见面啦～
-                        这次用了清新的绿色主题，是不是看着很舒服呢？以后会在这里分享更多日常，欢迎大家常来玩哦！
-                    </p>
-                    <div class="post-tags">
-                        <span class="tag">#日常</span>
-                        <span class="tag">#新博客</span>
-                        <span class="tag">#开心</span>
-                    </div>
-                    <a href="articles.html" class="read-more">阅读更多 →</a>
-                </div>
-            </article>
+            <!-- 最新文章（由 JS 从 data/articles.json 动态加载，与文章列表页保持同步） -->
+            <div id="latestArticles">
+                <!-- 文章由JS动态加载 -->
+            </div>
 
-            <article class="post-card">
-                <div class="post-thumbnail">📚</div>
-                <div class="post-content">
-                    <span class="post-date">2026-07-20</span>
-                    <h2 class="post-title">绿色上网小贴士</h2>
-                    <p class="post-excerpt">
-                        上网的时候要注意保护自己哦：不要随便透露个人信息，不要浏览不良网站，
-                        合理安排上网时间，多出去走走看看大自然。健康上网，快乐成长～
-                    </p>
-                    <div class="post-tags">
-                        <span class="tag">#小贴士</span>
-                        <span class="tag">#网络安全</span>
-                        <span class="tag">#健康上网</span>
-                    </div>
-                    <a href="articles.html" class="read-more">阅读更多 →</a>
-                </div>
-            </article>
-
-            <article class="post-card">
-                <div class="post-thumbnail">🎂</div>
-                <div class="post-content">
-                    <span class="post-date">2026-06-11</span>
-                    <h2 class="post-title">我的生日到啦！</h2>
-                    <p class="post-excerpt">
-                        今天是6月11日，小绿又长大一岁啦！谢谢大家一直以来的陪伴～
-                        从2009年到现在，已经过去好多年了，感谢大家还记得我。希望以后也能一直和大家在一起！
-                    </p>
-                    <div class="post-tags">
-                        <span class="tag">#生日</span>
-                        <span class="tag">#纪念</span>
-                        <span class="tag">#感谢</span>
-                    </div>
-                    <a href="articles.html" class="read-more">阅读更多 →</a>
-                </div>
-            </article>
-
-            <article class="post-card">
-                <div class="post-thumbnail">🌿</div>
-                <div class="post-content">
-                    <span class="post-date">2026-06-01</span>
-                    <h2 class="post-title">六一儿童节快乐！</h2>
-                    <p class="post-excerpt">
-                        今天是六一国际儿童节！不管年龄多大，都要保持一颗童心呀～
-                        小绿会一直守护大家的花季时光，祝大家节日快乐，永远开心！
-                    </p>
-                    <div class="post-tags">
-                        <span class="tag">#儿童节</span>
-                        <span class="tag">#快乐</span>
-                        <span class="tag">#童心</span>
-                    </div>
-                    <a href="articles.html" class="read-more">阅读更多 →</a>
-                </div>
-            </article>
-
-            <article class="post-card">
-                <div class="post-thumbnail">🍀</div>
-                <div class="post-content">
-                    <span class="post-date">2026-05-15</span>
-                    <h2 class="post-title">关于绿坝-花季护航</h2>
-                    <p class="post-excerpt">
-                        很多人问我"绿坝-花季护航"是什么？这是一款保护未成年人健康上网的软件，
-                        我是它的拟人化形象哦～虽然现在软件已经淡出大家视野，但小绿我会继续在这里守护大家！
-                    </p>
-                    <div class="post-tags">
-                        <span class="tag">#科普</span>
-                        <span class="tag">#绿坝</span>
-                        <span class="tag">#回忆</span>
-                    </div>
-                    <a href="articles.html" class="read-more">阅读更多 →</a>
-                </div>
-            </article>
-
-            <!-- 分页 -->
-            <div class="pagination">
-                <a href="articles.html" class="page-link">« 上一页</a>
-                <a href="articles.html" class="page-link active">1</a>
-                <a href="articles.html" class="page-link">2</a>
-                <a href="articles.html" class="page-link">3</a>
-                <span class="page-dots">...</span>
-                <a href="articles.html" class="page-link">下一页 »</a>
+            <div style="text-align: center; margin: 1.5rem 0;">
+                <a href="articles.html" class="read-more" style="display: inline-block;">查看全部文章 →</a>
             </div>
         </div>
 
@@ -309,7 +215,12 @@
                 <ul>
                     <li><a href="index.html">首页</a></li>
                     <li><a href="articles.html">文章</a></li>
-                    <li><a href="video.html">视频</a></li>                    <li><a href="about.html">关于</a></li>
+                    <li><a href="gallery.html">相册</a></li>
+                    <li><a href="video.html">视频</a></li>
+                    <li><a href="memories.html">记忆</a></li>
+                    <li><a href="rumors.html">留言墙</a></li>
+                    <li><a href="game.html">小游戏</a></li>
+                    <li><a href="about.html">关于</a></li>
                 </ul>
             </div>
             <div class="footer-section">
@@ -335,32 +246,53 @@
     <script src="js/theme-manager.js"></script>
     <script>
     // 最新文章：与文章列表页共用 data/articles.json，按日期倒序取前5条
+    // 主内容区渲染文章卡片（复用 post-card 样式），侧边栏渲染最新文章列表
     (async function() {
-        const list = document.getElementById('latestPosts');
+        const mainList = document.getElementById('latestArticles');
+        const sidebarList = document.getElementById('latestPosts');
         try {
             const res = await fetch('data/articles.json');
             const articles = await res.json();
             const latest = [...articles].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-            list.innerHTML = latest.map(a => `
-                <li>
-                    <a href="articles.html">${a.title}</a>
-                    <span class="latest-date">${a.date}</span>
-                </li>
-            `).join('');
+
+            if (mainList) {
+                mainList.innerHTML = latest.map(a => `
+                    <article class="post-card">
+                        <div class="post-thumbnail">${a.thumbnail}</div>
+                        <div class="post-content">
+                            <span class="post-date">${a.date}</span>
+                            <h2 class="post-title">${a.title}</h2>
+                            <p class="post-excerpt">${a.excerpt}</p>
+                            <div class="post-tags">
+                                ${a.tags.map(t => `<span class="tag">#${t}</span>`).join('')}
+                            </div>
+                        </div>
+                    </article>
+                `).join('');
+            }
+
+            if (sidebarList) {
+                sidebarList.innerHTML = latest.map(a => `
+                    <li>
+                        <a href="articles.html">${a.title}</a>
+                        <span class="latest-date">${a.date}</span>
+                    </li>
+                `).join('');
+            }
         } catch (e) {
-            list.innerHTML = '<li><a href="articles.html">查看文章列表 →</a></li>';
+            if (mainList) {
+                mainList.innerHTML = '<p style="text-align:center;color:#999;padding:2rem;">文章加载失败，请刷新重试～</p>';
+            }
+            if (sidebarList) {
+                sidebarList.innerHTML = '<li><a href="articles.html">查看文章列表 →</a></li>';
+            }
             console.error('最新文章加载失败:', e);
         }
     })();
     </script>
     <script src="js/script.js"></script>
 
-    <script src="js/vue-v3.5.40.js">
-        // vue.min.js
-    </script>
-    <script src="js/navbar.js">
-        //引入navbar.js
-    </script>
+    <script src="js/navbar.js"></script>
 
     <!-- 绿坝放置 全屏游戏遮罩层 -->
     <div id="clickerOverlay" class="clicker-overlay" hidden>
