@@ -26,14 +26,15 @@ set -euo pipefail
 # ---------- 自定位 ----------
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(dirname "$SCRIPT_DIR")"
-PY="${PYTHON:-/usr/bin/python3}"
+PY="${PYTHON:-$(command -v python3 || echo python3)}"
 
-# ---------- 代理（GitHub 访问需要，已注入则不覆盖） ----------
-PROXY_HOST="http://192.168.0.92:18081"
-export http_proxy="${http_proxy:-$PROXY_HOST}"
-export https_proxy="${https_proxy:-$PROXY_HOST}"
-export HTTP_PROXY="${HTTP_PROXY:-$PROXY_HOST}"
-export HTTPS_PROXY="${HTTPS_PROXY:-$PROXY_HOST}"
+# ---------- 代理（需要时通过环境变量 PROXY 传，不写死内网地址） ----------
+if [ -n "${PROXY:-}" ]; then
+    export http_proxy="${http_proxy:-$PROXY}"
+    export https_proxy="${https_proxy:-$PROXY}"
+    export HTTP_PROXY="${HTTP_PROXY:-$PROXY}"
+    export HTTPS_PROXY="${HTTPS_PROXY:-$PROXY}"
+fi
 
 # ---------- Token ----------
 if [ -z "${GH_TOKEN:-}" ] && [ -n "${NEKRO_RESOURCE_GITHUB_GITHUB:-}" ]; then

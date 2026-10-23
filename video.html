@@ -10,87 +10,11 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/themes.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎬</text></svg>">
-    <style>
-        .video-card {
-            background: white;
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 15px var(--shadow);
-            border: 1px solid var(--green-light);
-            transition: all 0.3s;
-        }
-        .video-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px var(--shadow);
-        }
-        .video-embed {
-            position: relative;
-            padding-bottom: 56.25%;
-            height: 0;
-            overflow: hidden;
-            border-radius: 12px;
-            margin-bottom: 1rem;
-            background: #000;
-        }
-        .video-embed iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .video-info {
-            padding: 0 0.5rem;
-        }
-        .video-title {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--green-dark);
-            margin-bottom: 0.5rem;
-        }
-        .video-meta {
-            display: flex;
-            gap: 1.5rem;
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 0.8rem;
-            flex-wrap: wrap;
-        }
-        .video-meta span {
-            display: flex;
-            align-items: center;
-            gap: 0.3rem;
-        }
-        .video-desc {
-            color: var(--green-deep);
-            line-height: 1.7;
-            font-size: 0.95rem;
-        }
-        .video-intro {
-            background: linear-gradient(135deg, var(--cream), white);
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            border: 2px dashed var(--green-light);
-            text-align: center;
-        }
-        .video-intro h2 {
-            color: var(--green-dark);
-            margin-bottom: 0.8rem;
-        }
-        .video-intro p {
-            color: var(--green-deep);
-            line-height: 1.7;
-        }
-        .video-thumbnail-emoji {
-            display: none;
-        }
-    </style>
+    <link rel="stylesheet" href="css/page-video.css">
 </head>
 <body>
-    <div class="leaves" id="leaves"></div>
+    <script src="js/common.js"></script>
+<div class="leaves" id="leaves"></div>
 
     <header class="header">
         <div class="logo-container">
@@ -158,42 +82,7 @@
         </aside>
     </main>
 
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-section">
-                <h4>🌱 小绿的博客</h4>
-                <p>
-                    绿色上网 · 花季护航<br>
-                    守护每一份纯真与美好
-                </p>
-            </div>
-            <div class="footer-section">
-                <h4>🔗 导航</h4>
-                <ul>
-                    <li><a href="index.html">首页</a></li>
-                    <li><a href="articles.html">文章</a></li>
-                    <li><a href="gallery.html">相册</a></li>
-                    <li><a href="video.html">视频</a></li>
-                    <li><a href="game.html">小游戏</a></li>
-                    <li><a href="memories.html">记忆</a></li>
-                    <li><a href="rumors.html">留言墙</a></li>
-                    <li><a href="about.html">关于</a></li>
-                </ul>
-            </div>
-            <div class="footer-section">
-                <h4>💚 友情提示</h4>
-                <p>
-                    更多视频请前往B站搜索<br>
-                    <a href="https://search.bilibili.com/all?keyword=绿坝娘" target="_blank" style="color: var(--green-light);">B站绿坝娘搜索 →</a>
-                </p>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>© 2009 - 2026 小绿（格林达姆）· 绿坝-花季护航</p>
-            <p style="margin-top: 0.5rem; opacity: 0.6;">Made with 💚 for healthy internet</p>
-        </div>
-    </footer>
-
+    <footer class="footer" id="site-footer"></footer>
     <script src="js/themes/green.js"></script>
     <script src="js/themes/vaporwave.js"></script>
     <script src="js/themes/frutiger.js"></script>
@@ -204,117 +93,8 @@
     <script src="js/themes/cyber.js"></script>
     <script src="js/theme-manager.js"></script>
     <script src="js/script.js"></script>
-    <script>
-        const ITEMS_PER_PAGE = 4;
-        let allVideos = [];
-        let currentPage = 1;
-
-        function formatViews(num) {
-            if (num >= 10000) {
-                return (num / 10000).toFixed(1) + '万';
-            }
-            return num.toString();
-        }
-
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const res = await fetch('data/videos.json');
-                allVideos = await res.json();
-
-                // 按发布日期倒序排列
-                allVideos.sort((a, b) => new Date(b.pubdate) - new Date(a.pubdate));
-
-                // 渲染第一页
-                renderPage(1);
-
-            } catch (e) {
-                document.getElementById('videosContainer').innerHTML =
-                    '<p style="text-align: center; color: #999; padding: 2rem;">视频加载失败，请刷新重试～</p>';
-                console.error('加载视频失败:', e);
-            }
-        });
-
-        function renderPage(page) {
-            const totalPages = Math.ceil(allVideos.length / ITEMS_PER_PAGE);
-            currentPage = Math.max(1, Math.min(page, totalPages || 1));
-
-            const start = (currentPage - 1) * ITEMS_PER_PAGE;
-            const pageVideos = allVideos.slice(start, start + ITEMS_PER_PAGE);
-
-            // 渲染视频卡片
-            const container = document.getElementById('videosContainer');
-            container.innerHTML = pageVideos.map(video => `
-                <div class="video-card">
-                    <div class="video-embed">
-                        <iframe src="//player.bilibili.com/player.html?bvid=${video.bvid}&page=1&high_quality=1&danmaku=0&autoplay=0"
-                                scrolling="no" border="0" frameborder="no" framespacing="0"
-                                allowfullscreen="true" sandbox="allow-same-origin allow-forms allow-scripts">
-                        </iframe>
-                    </div>
-                    <div class="video-info">
-                        <h3 class="video-title">${video.thumbnail} ${video.title}</h3>
-                        <div class="video-meta">
-                            <span>👤 UP主：${video.up}</span>
-                            <span>👀 播放：${formatViews(video.views)}</span>
-                            <span>📅 发布：${video.pubdate}</span>
-                            <a href="https://www.bilibili.com/video/${video.bvid}" target="_blank" style="color: var(--green-main);">
-                                🡵 去B站观看
-                            </a>
-                        </div>
-                        ${video.description ? `<div class="video-desc">${video.description}</div>` : ''}
-                    </div>
-                </div>
-            `).join('');
-
-            // 更新统计
-            document.getElementById('totalCount').textContent = allVideos.length;
-            document.getElementById('totalPages').textContent = totalPages;
-
-            // 渲染分页
-            renderPagination(totalPages);
-
-            // 滚动到顶部
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        function renderPagination(totalPages) {
-            if (totalPages <= 1) {
-                document.getElementById('pagination').innerHTML = '';
-                return;
-            }
-
-            let html = '';
-
-            // 上一页
-            html += `<a href="#" class="page-link ${currentPage === 1 ? 'disabled' : ''}" data-page="${currentPage - 1}">« 上一页</a>`;
-
-            // 页码
-            for (let i = 1; i <= totalPages; i++) {
-                if (i === 1 || i === totalPages || Math.abs(i - currentPage) <= 1) {
-                    html += `<a href="#" class="page-link ${i === currentPage ? 'active' : ''}" data-page="${i}">${i}</a>`;
-                } else if (Math.abs(i - currentPage) === 2) {
-                    html += `<span class="page-dots">...</span>`;
-                }
-            }
-
-            // 下一页
-            html += `<a href="#" class="page-link ${currentPage === totalPages ? 'disabled' : ''}" data-page="${currentPage + 1}">下一页 »</a>`;
-
-            const pagination = document.getElementById('pagination');
-            pagination.innerHTML = html;
-
-            // 绑定点击事件
-            pagination.querySelectorAll('.page-link:not(.disabled)').forEach(el => {
-                el.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    renderPage(parseInt(el.dataset.page));
-                });
-            });
-        }
-    </script>
-
-    <script src="js/navbar.js">
-        //引入navbar.js
-    </script>
+    <script src="js/page-video.js"></script>
+    <script src="js/navbar.js"></script>
+    <script src="js/footer.js"></script>
 </body>
 </html>

@@ -21,21 +21,13 @@ import json
 from datetime import datetime
 import argparse
 
-# 隐私脱敏正则模式
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
+
+# 这里只留 common 没有的：内网 IP 与示例人名
 SENSITIVE_PATTERNS = [
-    # QQ号 - 5-12位数字
-    (r'[1-9]\d{4,11}', '[QQ号]'),
-    # 手机号 - 11位手机号
-    (r'1[3-9]\d{9}', '[手机号]'),
-    # 群号模式 - 常见QQ群号描述
-    (r'群号[:：]\s*\d+', '群号: [已隐藏]'),
-    (r'群\s*\d+', '群 [已隐藏]'),
-    # 邮箱
-    (r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[邮箱]'),
-    # IP地址
-    (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '[IP地址]'),
-    # 真实姓名模式 - 常见中文姓名（简单匹配）
-    (r'(张三|李四|王五|赵六|孙七|周八|吴九|郑十)', '[匿名用户]'),
+    (r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', '「IP地址」'),
+    (r'(张三|李四|王五|赵六|孙七|周八|吴九|郑十)', '「匿名用户」'),
 ]
 
 # 默认标签根据内容匹配
@@ -53,8 +45,8 @@ TAG_KEYWORDS = {
 
 
 def desensitize(text: str) -> str:
-    """对文本进行隐私脱敏处理"""
-    result = text
+    """对文本进行隐私脱敏处理：统一规则在 common，这里补人名和 IP。"""
+    result = common.redact(text)
     for pattern, replacement in SENSITIVE_PATTERNS:
         result = re.sub(pattern, replacement, result)
     return result
@@ -82,10 +74,8 @@ def load_memories(json_path: str) -> list:
 
 
 def save_memories(memories: list, json_path: str):
-    """保存memories.json，保持美观缩进"""
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(memories, f, ensure_ascii=False, indent=4)
-        f.write('\n')
+    """保存 memories.json：先写临时文件再替换，写一半断电不会毁数据"""
+    common.write_json(json_path, memories)
 
 
 def main():
@@ -108,7 +98,7 @@ def main():
     if args.date:
         date_obj = datetime.strptime(args.date, '%Y-%m-%d')
     else:
-        date_obj = datetime.now()
+        date_obj = common.now_cst()
     date_str = date_obj.strftime('%Y-%m-%d')
 
     # 处理标题

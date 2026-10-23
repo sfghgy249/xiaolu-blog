@@ -13,11 +13,23 @@
 #   pkill -f blog_scheduler.sh
 # ============================================================
 
+set -uo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BLOG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_FILE="$BLOG_ROOT/data/daily_log/blog_cron.log"
 
 mkdir -p "$(dirname "$LOG_FILE")"
+
+# 单实例锁：blog_scheduler 和 cron_runner 都跑起来时，两边会同时 git commit 撞 index.lock，
+# 同一轮文章也可能被生成两遍。有 flock 就用，没有就靠手动保证。
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${TMPDIR:-/tmp}/xiaolu-scheduler.lock"
+    if ! flock -n 9; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 已有调度器在运行，本实例退出" >> "$LOG_FILE"
+        exit 0
+    fi
+fi
 
 log() {
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"
@@ -44,8 +56,12 @@ while true; do
         if [ "$MIN" -le 5 ]; then
             log "⏰ 开始每晚群聊记忆更新"
             if [ -f "$SCRIPT_DIR/run_group_memory.sh" ]; then
-                /bin/bash "$SCRIPT_DIR/run_group_memory.sh" >> "$LOG_FILE" 2>&1
-                log "✅ 群聊记忆更新执行完毕"
+                # 退出码要收下，原来跑挂了也只记一句"执行完毕"
+                if /bin/bash "$SCRIPT_DIR/run_group_memory.sh" >> "$LOG_FILE" 2>&1; then
+                    log "✅ 群聊记忆更新执行完毕"
+                else
+                    log "❌ 群聊记忆更新失败"
+                fi
             else
                 log "⚠️ 未找到 run_group_memory.sh，跳过"
             fi
@@ -61,8 +77,11 @@ while true; do
         if [ $(( DAYS_SINCE_EPOCH % ARTICLES_INTERVAL_DAYS )) -eq 0 ] && [ "$MIN" -le 5 ]; then
             log "⏰ 开始每三天文章更新（热点时评）"
             if [ -f "$SCRIPT_DIR/run_article_update.sh" ]; then
-                /bin/bash "$SCRIPT_DIR/run_article_update.sh" >> "$LOG_FILE" 2>&1
-                log "✅ 文章更新执行完毕"
+                if /bin/bash "$SCRIPT_DIR/run_article_update.sh" >> "$LOG_FILE" 2>&1; then
+                    log "✅ 文章更新执行完毕"
+                else
+                    log "❌ 文章更新失败"
+                fi
             else
                 log "⚠️ 未找到 run_article_update.sh，跳过"
             fi

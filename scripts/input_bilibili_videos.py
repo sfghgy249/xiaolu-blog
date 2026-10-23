@@ -18,6 +18,11 @@
 
 import argparse
 import json
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
 import re
 import sys
 from datetime import datetime, timezone, timedelta
@@ -87,8 +92,7 @@ def merge_and_save(video: dict) -> tuple[int, int]:
     for i, v in enumerate(merged, start=1):
         v["id"] = i  # 与现有数据保持一致：id 为整数
 
-    with open(DATA_PATH, "w", encoding="utf-8") as f:
-        json.dump(merged, f, ensure_ascii=False, indent=4)
+    common.write_json(DATA_PATH, merged)
     return len(merged), is_new
 
 

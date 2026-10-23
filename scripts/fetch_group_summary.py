@@ -9,7 +9,7 @@
 
 原理：
     调用 OneBot v11 标准动作 get_group_msg_history 拉取群消息历史，
-    筛选指定发送者（默认 QQ 434672754）发出的含图片消息，按消息日期下载图片。
+    筛选指定发送者（环境变量 SUMMARY_SENDER）发出的含图片消息，按消息日期下载图片。
 
 ⚠️ 运行位置：
     本脚本必须在**能访问 OneBot HTTP 服务**的机器上运行（即运行 NapCat/Lagrange/
@@ -38,11 +38,16 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-CST = timezone(timedelta(hours=8))  # 东八区
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
 
-DEFAULT_GROUP = 798378266          # 目标群号
-DEFAULT_SENDER = 434672754         # 每日发送 astrbot 群总结的 QQ
-DEFAULT_OUTPUT = "/workspace/default/shared/group_summary"
+CST = common.CST
+
+# 群号和发送者 QQ 原来是直接写在这里的，仓库是公开的，等于把真实群号挂在网上。
+# 现在一律从环境变量取：GROUP_ID / SUMMARY_SENDER，没配就报错提示。
+DEFAULT_GROUP = int(os.environ.get("GROUP_ID", "0") or 0)
+DEFAULT_SENDER = int(os.environ.get("SUMMARY_SENDER", "0") or 0)
+DEFAULT_OUTPUT = os.environ.get("GROUP_SUMMARY_DIR", "shared/group_summary")
 
 
 def call_onebot(base: str, token: str, action: str, params: dict, timeout: int = 20):
@@ -158,6 +163,11 @@ def main():
     p.add_argument("--dry-run", action="store_true", help="只列出将下载的图片，不实际下载")
     p.add_argument("--force", action="store_true", help="已存在同名文件也重新下载")
     args = p.parse_args()
+
+    if not args.group or not args.sender:
+        print("❌ 缺少群号或发送者 QQ：用 --group / --sender 指定，或设环境变量 GROUP_ID / SUMMARY_SENDER",
+              file=sys.stderr)
+        sys.exit(2)
 
     os.makedirs(args.output, exist_ok=True)
 

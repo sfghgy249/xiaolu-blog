@@ -30,17 +30,13 @@ import argparse
 import random
 from datetime import datetime, timedelta
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
+
 # ========== 隐私脱敏 ==========
-# 仅替换联系方式类敏感信息，内容生成时自然避免提到具体用户昵称
-SENSITIVE_PATTERNS = [
-    (r'[1-9]\d{4,11}', '[QQ号]'),          # QQ号
-    (r'1[3-9]\d{9}', '[手机号]'),          # 手机号
-    (r'群号[:：]\s*\d+', '群号: [已隐藏]'),  # 群号
-    (r'群\s*\d{5,}', '群 [已隐藏]'),
-    (r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '[邮箱]'),  # 邮箱
-    (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '[IP地址]'),  # IP地址
-    (r'ghp_[a-zA-Z0-9]{30,}', '[GitHub Token]'),  # GitHub Token
-]
+# 规则统一放在 common.py，别在这里再写一份。原来这套：[1-9]\d{4,11} 没有边界，
+# 会把 18 位身份证切成 [QQ号]0[QQ号]；也没有任何一条能遮住银行卡。
+IP_PATTERN = re.compile(r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b')
 
 # ========== 自动标签匹配 ==========
 TAG_KEYWORDS = {
@@ -88,11 +84,9 @@ FEELINGS_SIMPLE = [
 
 
 def desensitize(text: str) -> str:
-    """简单脱敏：仅替换联系方式类敏感信息，内容生成时自然避免提到具体昵称"""
-    result = text
-    for pattern, replacement in SENSITIVE_PATTERNS:
-        result = re.sub(pattern, replacement, result)
-    return result
+    """脱敏：规则在 common.PRIVACY_RULES，这里额外把内网 IP 也遮掉。"""
+    result = common.redact(text)
+    return IP_PATTERN.sub('[IP地址]', result)
 
 
 def clean_nicknames(text: str) -> str:
@@ -278,68 +272,42 @@ def load_events(log_path: str) -> list:
 
 
 def load_memories(json_path: str) -> list:
-    if not os.path.exists(json_path):
-        return []
-    with open(json_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return common.read_json(json_path, []) or []
 
 
 def save_memories(memories: list, json_path: str):
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(memories, f, ensure_ascii=False, indent=4)
-        f.write('\n')
+    common.write_json(json_path, memories)
 
 
 def git_commit_and_push(repo_dir: str, date_str: str):
-    """自动提交并推送到 GitHub"""
-    # 外网代理（访问 GitHub 需要），已注入则不覆盖
-    proxy = 'http://192.168.0.92:18081'
-    for k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
-        os.environ.setdefault(k, proxy)
+    """自动提交并推送。
+
+    旧版把 https://user:token@github.com/... 写进 remote，且只在"无改动"和"成功"
+    两个分支还原，一旦 add/commit/push 抛异常，token 就留在 .git/config 里。
+    现在改走 common.git_push：凭据只作为一条命令的环境变量存在。
+    """
+    proxy = common.get_proxy()
+    if proxy:
+        for k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
+            os.environ.setdefault(k, proxy)
     try:
-        # Token 优先级：GH_TOKEN > NEKRO_RESOURCE_GITHUB_GITHUB > scripts/.gh_token
-        gh_token = os.environ.get('GH_TOKEN', '') or os.environ.get('NEKRO_RESOURCE_GITHUB_GITHUB', '')
-        if not gh_token and os.path.exists(os.path.join(os.path.dirname(__file__), '.gh_token')):
-            with open(os.path.join(os.path.dirname(__file__), '.gh_token')) as f:
-                gh_token = f.read().strip()
-
-        if gh_token:
-            subprocess.run(
-                ['git', 'remote', 'set-url', 'origin',
-                 f'https://sfghgy249:{gh_token}@github.com/sfghgy249/xiaolu-blog.git'],
-                cwd=repo_dir, capture_output=True
-            )
-
+        gh_token = common.get_gh_token()
+        commit_msg = f"docs: {date_str} 每日回忆自动更新"
         # 仅提交记忆数据文件，避免误带入 data/ 下其他无关改动
-        subprocess.run(['git', 'add', 'data/memories.json', 'data/group_memory.json'],
-                       cwd=repo_dir, capture_output=True, check=True)
-
-        result = subprocess.run(
-            ['git', 'diff', '--cached', '--stat'],
-            cwd=repo_dir, capture_output=True, text=True
-        )
-        if not result.stdout.strip():
+        if not common.git_commit(repo_dir, commit_msg,
+                                 files=['data/memories.json', 'data/group_memory.json']):
             print("ℹ️  没有数据变化需要提交")
-            if gh_token:
-                subprocess.run(
-                    ['git', 'remote', 'set-url', 'origin', 'https://github.com/sfghgy249/xiaolu-blog.git'],
-                    cwd=repo_dir, capture_output=True
-                )
             return False
 
-        commit_msg = f"docs: {date_str} 每日回忆自动更新"
-        subprocess.run(['git', 'commit', '-m', commit_msg], cwd=repo_dir, capture_output=True, check=True)
-        subprocess.run(['git', 'push', 'origin', 'main'], cwd=repo_dir, capture_output=True, check=True)
-
         if gh_token:
-            subprocess.run(
-                ['git', 'remote', 'set-url', 'origin', 'https://github.com/sfghgy249/xiaolu-blog.git'],
-                cwd=repo_dir, capture_output=True
-            )
+            common.git_push(repo_dir, gh_token)
+        else:
+            # 没有 token 就交给本机已有的凭据（credential helper / ssh）
+            common.run(['git', 'push', 'origin', 'main'], cwd=repo_dir)
 
-        print(f"🚀 已提交并推送到 GitHub！")
+        print("🚀 已提交并推送到 GitHub！")
         return True
-    except subprocess.CalledProcessError as e:
+    except Exception as e:
         print(f"⚠️  Git 操作失败: {e}")
         return False
 
@@ -355,7 +323,8 @@ def main():
     if args.date:
         date_obj = datetime.strptime(args.date, '%Y-%m-%d')
     else:
-        date_obj = datetime.now() - timedelta(days=1)
+        # 容器时区是 UTC，naive 的 now() 在早上八点前会算成昨天，跨天就错位
+        date_obj = common.now_cst() - timedelta(days=1)
     date_str = date_obj.strftime('%Y-%m-%d')
 
     script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -423,8 +392,8 @@ def main():
 
     # 标记日志已处理
     processed_marker = log_path + '.processed'
-    with open(processed_marker, 'w') as f:
-        f.write(datetime.now().isoformat() + '\n')
+    with open(processed_marker, 'w', encoding='utf-8') as f:
+        f.write(common.now_cst().isoformat() + '\n')
     print(f"🗑️  日志已标记为已处理")
 
     if args.auto_push:

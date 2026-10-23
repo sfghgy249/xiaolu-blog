@@ -10,10 +10,21 @@
 #   pkill -f cron_runner.sh
 # ============================================================
 
+set -uo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 LOG_FILE="$SCRIPT_DIR/../data/daily_log/cron.log"
 
 mkdir -p "$(dirname "$LOG_FILE")"
+
+# 和 blog_scheduler 共用同一把锁，避免两个调度器同时触发同一批任务
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${TMPDIR:-/tmp}/xiaolu-scheduler.lock"
+    if ! flock -n 9; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] 已有调度器在运行，本实例退出" >> "$LOG_FILE"
+        exit 0
+    fi
+fi
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] cron_runner 启动，PID=$$" >> "$LOG_FILE"
 
@@ -26,7 +37,7 @@ while true; do
     echo "[$(date '+%Y-%m-%d %H:%M:%S')] 下次执行时间: $(date -d @$MIDNIGHT '+%Y-%m-%d %H:%M'), 等待 ${SLEEP_SECS}秒" >> "$LOG_FILE"
 
     # 等待到午夜
-    sleep $SLEEP_SECS
+    sleep "$SLEEP_SECS"
 
     # 稍微延迟几秒，确保日期切换
     sleep 5

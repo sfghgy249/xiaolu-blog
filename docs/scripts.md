@@ -11,6 +11,30 @@ xiaolu-blog 项目提供了一系列自动化脚本，用于内容更新、回�
 | [daily_memory_summary.py](#daily_memory_summarypy) | 每日回忆自动总结生成，支持脱敏、自动提交推送 | 标准库 |
 | [update_memories.py](#update_memoriespy) | 手动添加回忆条目，直接写入 memories.json | 标准库 |
 | [fetch_bilibili_videos.py](#fetch_bilibili_videospy) | B站视频自动抓取，更新视频专栏数据 | requests |
+| common.py | **公共库**：脱敏、原子写 JSON、UTC+8 时区、代理与 token、git 提交推送、HTML 净化 | 标准库 |
+| update_group_memory.py | 群聊总结文本 → 脱敏 → 写入 group_memory.json（可 --push） | 标准库 |
+| generate_article.py | 抓热点 → 生成「小绿看热点」时评 → 写入 articles.json（可 --push） | 标准库 |
+| fetch_group_summary.py | 从 OneBot 拉群总结图片（群号/发送者走环境变量） | 标准库 |
+| input_bilibili_videos.py | 按 BV 号手动录入视频，合并写入 videos.json | requests |
+| blog_scheduler.sh | 容器内调度器（23:00 群记忆 / 每三天 09:00 文章），带 flock 单实例锁 | bash, flock |
+| cron_runner.sh | 容器内调度器（每天 00:00 回忆总结），与上面共用同一把锁 | bash, flock |
+| update_memory.sh | 统一入口：check / log / summary | bash |
+| run_daily_summary.sh / run_group_memory.sh / run_article_update.sh | 三个任务的单次执行入口 | bash |
+| setup_cron.sh | 给有 cron 的机器写 crontab | bash |
+| serve.py / serve.sh | 本地预览服务器（仅开发用，别在有公网 IP 的机器上开） | 标准库 |
+
+### 环境变量
+
+| 变量 | 用途 | 说明 |
+|------|------|------|
+| `GH_TOKEN` / `NEKRO_RESOURCE_GITHUB_GITHUB` | 推送凭据 | 也可放 `scripts/.gh_token`（已 gitignore） |
+| `PROXY` | 外网代理 | 不设则直连，代码里没有内网地址了 |
+| `GROUP_ID` / `SUMMARY_SENDER` | 群号 / 总结机器人 QQ | 必填，仓库里不再写死真实号码 |
+| `ONEBOT_BASE` / `ONEBOT_TOKEN` | OneBot 地址与令牌 | 默认 http://127.0.0.1:3000 |
+| `BLOG_LLM_KEY` / `BLOG_LLM_URL` / `BLOG_LLM_MODEL` | 时评生成用的模型 | 可选，不配则用内置模板 |
+
+脱敏规则统一在 `common.PRIVACY_RULES`：身份证、银行卡、手机号（含 +86 与分隔符）、QQ 号、
+群号、邮箱、GitHub token / sk- / JWT、链接、@提及。加规则只改这一处。
 
 ## 快速开始
 
@@ -37,7 +61,6 @@ xiaolu-blog/
 │   ├── videos.json               # 视频专栏数据
 │   ├── articles.json             # 文章专栏数据
 │   ├── rumors.json               # 辟谣专栏数据
-│   ├── diary.json                # 日记数据
 │   └── daily_log/                # 每日事件日志目录
 │       └── YYYY-MM-DD.jsonl      # 每日事件JSONL格式日志
 ```
@@ -63,7 +86,7 @@ python3 log_event.py --type chat "群里讨论了绿坝娘新同人作品，大�
 python3 log_event.py --date 2026-07-26 "补记昨天的内容：调试部署脚本"
 
 # 指定事件来源
-python3 log_event.py --source "group-798378266" "群消息记录"
+python3 log_event.py --source "group-<群号>" "群消息记录"
 ```
 
 ### 命令行参数

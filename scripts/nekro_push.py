@@ -25,16 +25,17 @@ from datetime import datetime
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_DIR = os.path.dirname(SCRIPT_DIR)
 
-# 代理配置（外网访问需要）
-PROXY_HOST = "http://192.168.0.92:18081"
+sys.path.insert(0, SCRIPT_DIR)
+import common
 
 
 def set_proxy_env():
-    """配置外网代理"""
-    os.environ['http_proxy'] = PROXY_HOST
-    os.environ['https_proxy'] = PROXY_HOST
-    os.environ['HTTP_PROXY'] = PROXY_HOST
-    os.environ['HTTPS_PROXY'] = PROXY_HOST
+    """配置外网代理。地址从环境变量 PROXY 读，没配就直连，代码里不写死。"""
+    proxy = common.get_proxy()
+    if not proxy:
+        return
+    for key in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
+        os.environ[key] = proxy
 
 
 def push_event(content: str, event_type: str = 'work', date: str = None, tags: list = None) -> bool:
@@ -51,7 +52,7 @@ def push_event(content: str, event_type: str = 'work', date: str = None, tags: l
         for tag in tags:
             cmd.extend(['--tag', tag])
 
-    result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True, encoding='utf-8')
     if result.returncode != 0:
         print(f"❌ 事件记录失败: {result.stderr}", file=sys.stderr)
         print(f"   stdout: {result.stdout}", file=sys.stderr)
@@ -72,7 +73,7 @@ def generate_summary(date: str = None, auto_push: bool = True) -> bool:
     if auto_push:
         cmd.append('--auto-push')
 
-    result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True)
+    result = subprocess.run(cmd, cwd=REPO_DIR, capture_output=True, text=True, encoding='utf-8')
     print(result.stdout)
     if result.returncode != 0:
         print(f"❌ 总结生成失败: {result.stderr}", file=sys.stderr)
@@ -95,13 +96,11 @@ def main():
     # 配置代理
     set_proxy_env()
 
-    # 确保 GH_TOKEN 在环境中
+    # 确保 GH_TOKEN 在环境中（优先级：环境变量 > scripts/.gh_token）
     if not os.environ.get('GH_TOKEN'):
-        # 尝试从配置读取
-        token_file = os.path.join(SCRIPT_DIR, '.gh_token')
-        if os.path.exists(token_file):
-            with open(token_file) as f:
-                os.environ['GH_TOKEN'] = f.read().strip()
+        token = common.get_gh_token()
+        if token:
+            os.environ['GH_TOKEN'] = token
 
     if args.summary_only:
         # 仅生成总结

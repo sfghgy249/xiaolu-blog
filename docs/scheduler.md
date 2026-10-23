@@ -1,6 +1,7 @@
 # 博客定时任务设计（blog_scheduler）
 
-博客维护自动化共三个定时任务，由统一的调度器 `scripts/blog_scheduler.sh` 驱动。
+博客维护自动化共三个定时任务：群聊记忆和文章时评由 `scripts/blog_scheduler.sh` 驱动，
+每日回忆总结由 `scripts/cron_runner.sh` 驱动（两个脚本共用一把 flock 锁，同时只会有一个实例在跑）。
 
 ## 任务总览
 
@@ -51,9 +52,9 @@ pkill -f blog_scheduler.sh
 ```bash
 export ONEBOT_BASE="http://127.0.0.1:3000"
 export ONEBOT_TOKEN="你的token"
-export GROUP_ID="798378266"
-export SUMMARY_SENDER="434672754"
-export GROUP_SUMMARY_DIR="/workspace/default/shared/group_summary"
+export GROUP_ID="<群号>"              # 必填，不写进仓库
+export SUMMARY_SENDER="<总结机器人QQ>"  # 必填，不写进仓库
+export GROUP_SUMMARY_DIR="/path/to/shared/group_summary"
 export PARSE_SCRIPT="/path/to/parse_summary.sh"   # 可选
 ```
 
@@ -73,7 +74,7 @@ export PARSE_SCRIPT="/path/to/parse_summary.sh"   # 可选
 ```bash
 export BLOG_LLM_KEY="sk-xxx"                        # 可选
 export BLOG_LLM_URL="https://ark.cn-beijing.volces.com/api/v3/chat/completions"  # 可选
-export PROXY="http://192.168.0.92:18081"            # 可选，外网代理
+export PROXY="http://127.0.0.1:7890"                # 可选，外网代理；不设则直连
 export GH_TOKEN="ghp_xxx"                           # 推送用（或放 scripts/.gh_token）
 ```
 
@@ -87,11 +88,14 @@ python3 scripts/generate_article.py --push      # 生成并推送
 
 ### 3. 原有每日回忆总结（每天 00:00）
 
-由 `cron_runner.sh`（原有）负责，不受本次改动影响。
+由 `cron_runner.sh`（原有）负责。注意容器时区是 UTC 时，它的"午夜"其实是北京时间 08:00；
+`daily_memory_summary.py` 内部已统一按 UTC+8 取日期，不受影响。
 
 ## 容错说明
 
 - 所有任务日志集中在 `data/daily_log/` 下（blog_cron.log / group_memory.log / article_update.log）
 - 新闻源全部失败时 `generate_article.py` 会安全退出，不会写坏 articles.json
-- 同一天重复执行群聊记忆/文章任务均有幂等保护（当日条目覆盖/跳过），不会产生重复
+- 同一天重复执行群聊记忆/文章任务都有幂等保护（当日条目覆盖/跳过）。
+  幂等只保证"同样输入不重复处理"，不保证"两个进程不同时跑"——并发由 flock 挡：
+  两个调度器抢同一把锁，抢不到的直接退出。
 - 定时任务仅记录隐私脱敏后的内容，原始事件日志 `data/daily_log/*.jsonl` 已 gitignore，不会上传

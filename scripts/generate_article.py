@@ -22,7 +22,7 @@
     BLOG_LLM_KEY     （可选）LLM API Key，配置后调用 AI 生成高质量时评
     BLOG_LLM_URL     （可选）LLM API 地址（OpenAI 兼容 /v1/chat/completions）
     BLOG_LLM_MODEL   （可选）模型名，默认 doubao-seed-2.0-lite
-    PROXY            （可选）http 代理，如 http://192.168.0.92:18081
+    PROXY            （可选）http 代理，如 http://127.0.0.1:7890；不设则直连
 
 用法：
     python3 generate_article.py            # 生成并写入（不推送）
@@ -41,7 +41,10 @@ import urllib.request
 import urllib.error
 from datetime import datetime, timedelta, timezone
 
-CST = timezone(timedelta(hours=8))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
+
+CST = common.CST
 
 BLOG_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ARTICLES_PATH = os.path.join(BLOG_ROOT, "data", "articles.json")
@@ -226,10 +229,10 @@ def build_article(topics):
         brief = (t["brief"] or "").strip() or "相关报道详见原链接。"
         # 去掉末尾句号再拼，避免双句号
         brief = brief.rstrip("。")
+        # 标题和摘要是从别人页面抓的，进 HTML 前必须转义
         paras.append(
-            f"<p><strong>第{i}条：{t['title']}</strong>"
-            f"{brief}。"
-            f"（来源：{t['source']}）</p>"
+            "<p><strong>第%d条：%s</strong>%s。（来源：%s）</p>" % (
+                i, common.escape(t["title"]), common.escape(brief), common.escape(t["source"]))
         )
     paras.append(
         "<p>好啦，本期小评就到这里～记得绿色上网、多关注正能量内容，"
@@ -292,8 +295,10 @@ def call_llm(topics):
 # ========== 写入与推送 ==========
 
 def write_article(article, push=False, dry_run=False):
-    with open(ARTICLES_PATH, "r", encoding="utf-8") as f:
-        articles = json.load(f)
+    articles = common.read_json(ARTICLES_PATH, []) or []
+    # 入库前再净化一道：模型返回的正文可能带标签，页面那边还有白名单
+    article["title"] = common.redact(str(article.get("title", "")))
+    article["excerpt"] = common.sanitize_html(article.get("excerpt", ""))
     # 幂等：同一天已有自动生成文章则跳过（除非 --force）
     if not args.force and any(
         a.get("date") == article["date"] and a.get("auto_generated")
@@ -308,8 +313,7 @@ def write_article(article, push=False, dry_run=False):
         print("🔍 预览文章（未写入）：")
         print("  id:", new_id, "| 标题:", article["title"])
         return True
-    with open(ARTICLES_PATH, "w", encoding="utf-8") as f:
-        json.dump(articles, f, ensure_ascii=False, indent=4)
+    common.write_json(ARTICLES_PATH, articles)
     print("✅ 已写入 articles.json，id =", new_id)
     if push:
         git_push(new_id)
@@ -317,24 +321,24 @@ def write_article(article, push=False, dry_run=False):
 
 
 def git_push(article_id):
-    proxy = os.environ.get("PROXY", "http://192.168.0.92:18081")
-    token = os.environ.get("GH_TOKEN", "")
-    token_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".gh_token")
-    if not token and os.path.exists(token_file):
-        token = open(token_file).read().strip()
-    import subprocess
+    proxy = common.get_proxy()
     env = dict(os.environ)
     if proxy:
         env["http_proxy"] = env["https_proxy"] = env["HTTP_PROXY"] = env["HTTPS_PROXY"] = proxy
     try:
-        subprocess.run(["git", "add", "data/articles.json", "data/hot_topic_queue.json"],
-                       cwd=BLOG_ROOT, check=True, env=env, capture_output=True)
-        subprocess.run(["git", "commit", "-m", f"feat: 小绿看热点文章自动更新（id={article_id}）"],
-                       cwd=BLOG_ROOT, check=True, env=env, capture_output=True)
-        subprocess.run(["git", "push", "origin", "main"], cwd=BLOG_ROOT, check=True, env=env, capture_output=True)
+        message = "feat: 小绿看热点文章自动更新（id=%d）" % article_id
+        if not common.git_commit(BLOG_ROOT, message,
+                                 files=["data/articles.json", "data/hot_topic_queue.json"]):
+            print("ℹ️ 没有变化需要提交")
+            return
+        token = common.get_gh_token()
+        if token:
+            common.git_push(BLOG_ROOT, token)
+        else:
+            common.run(["git", "push", "origin", "main"], cwd=BLOG_ROOT, env=env)
         print("🚀 已推送到 GitHub")
-    except subprocess.CalledProcessError as e:
-        print("⚠️ 推送失败:", e.stderr.decode("utf-8", "replace")[-300:], file=sys.stderr)
+    except Exception as e:
+        print("⚠️ 推送失败:", e, file=sys.stderr)
 
 
 def main():
@@ -359,10 +363,11 @@ def main():
         print("  -", t["title"])
 
     # 保存热点队列（供人工/AI 参考）
-    os.makedirs(os.path.dirname(QUEUE_PATH), exist_ok=True)
-    with open(QUEUE_PATH, "w", encoding="utf-8") as f:
-        json.dump({"generated_at": datetime.now(CST).isoformat(), "topics": topics, "queue": queue[:10]},
-                  f, ensure_ascii=False, indent=2)
+    common.write_json(QUEUE_PATH, {
+        "generated_at": common.now_cst().isoformat(),
+        "topics": topics,
+        "queue": queue[:10],
+    }, indent=2)
 
     if not topics:
         print("ℹ️ 没有命中合适热点，仅保存队列，本次不生成文章")

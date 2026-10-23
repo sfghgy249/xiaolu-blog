@@ -25,6 +25,9 @@ import sys
 import argparse
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
+
 
 def get_log_path(date_str=None):
     """获取当天的日志文件路径"""
@@ -32,7 +35,8 @@ def get_log_path(date_str=None):
     log_dir = os.path.join(script_dir, '..', 'data', 'daily_log')
     os.makedirs(log_dir, exist_ok=True)
     if date_str is None:
-        date_str = datetime.now().strftime('%Y-%m-%d')
+        # 容器时区是 UTC，容器里的"今天"已经错成昨天了
+        date_str = common.now_cst().strftime('%Y-%m-%d')
     return os.path.join(log_dir, f'{date_str}.jsonl')
 
 
@@ -49,7 +53,7 @@ def log_event(summary, tags=None, event_time=None, date_str=None, event_type='wo
     if tags is None:
         tags = []
     if event_time is None:
-        event_time = datetime.now().strftime('%H:%M')
+        event_time = common.now_cst().strftime('%H:%M')
 
     event = {
         'time': event_time,

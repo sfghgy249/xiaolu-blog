@@ -106,7 +106,6 @@ xiaolu-blog/
 │   ├── videos.json         # 视频数据
 │   ├── articles.json       # 文章数据
 │   ├── rumors.json         # 辟谣数据
-│   ├── diary.json          # 日记数据
 │   └── daily_log/          # 事件日志目录（git忽略）
 ├── scripts/                # 自动化脚本
 │   ├── nekro_push.py       # NekroAgent外部推送统一入口

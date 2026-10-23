@@ -18,6 +18,9 @@ import os
 import sys
 import argparse
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
 from datetime import datetime
 
 try:
@@ -136,9 +139,7 @@ def main():
         return
 
     # 写入文件
-    os.makedirs(os.path.dirname(json_path), exist_ok=True)
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(merged, f, ensure_ascii=False, indent=4)
+    common.write_json(json_path, merged)
 
     print(f"💾 已更新 {json_path}")
 

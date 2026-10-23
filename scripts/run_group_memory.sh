@@ -22,27 +22,33 @@
 #   - 若没有解析能力，脚本会把图片清单记录到日志，等待人工/技能补录
 # ============================================================
 
+set -uo pipefail
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BLOG_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 LOG_FILE="$BLOG_ROOT/data/daily_log/group_memory.log"
 TODAY="$(date +%F)"
+# 默认放在仓库同级目录下，别再写死 /workspace/default
+SUMMARY_DIR="${GROUP_SUMMARY_DIR:-$BLOG_ROOT/shared/group_summary}"
 
 mkdir -p "$(dirname "$LOG_FILE")"
-mkdir -p "${GROUP_SUMMARY_DIR:-/workspace/default/shared/group_summary}"
+mkdir -p "$SUMMARY_DIR"
 
 log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> "$LOG_FILE"; }
 
 log "===== 群聊记忆更新开始（$TODAY）====="
 
 # ---------- 1. 拉取当天群总结图片 ----------
-SUMMARY_DIR="${GROUP_SUMMARY_DIR:-/workspace/default/shared/group_summary}"
 log "拉取群总结图片 → $SUMMARY_DIR"
-if command -v python3 >/dev/null 2>&1; then
+if [ -z "${GROUP_ID:-}" ] || [ -z "${SUMMARY_SENDER:-}" ]; then
+    # 真实群号和发送者 QQ 不写进仓库，改用环境变量传
+    log "⚠️ 未配置 GROUP_ID / SUMMARY_SENDER，跳过拉取"
+elif command -v python3 >/dev/null 2>&1; then
     python3 "$SCRIPT_DIR/fetch_group_summary.py" \
         --base "${ONEBOT_BASE:-http://127.0.0.1:3000}" \
         --token "${ONEBOT_TOKEN:-}" \
-        --group "${GROUP_ID:-798378266}" \
-        --sender "${SUMMARY_SENDER:-434672754}" \
+        --group "$GROUP_ID" \
+        --sender "$SUMMARY_SENDER" \
         --output "$SUMMARY_DIR" --days 1 2>&1 | tee -a "$LOG_FILE"
 else
     log "⚠️ 无 python3，跳过拉取"

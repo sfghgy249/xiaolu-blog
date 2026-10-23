@@ -1,0 +1,76 @@
+.video-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px var(--shadow);
+            border: 1px solid var(--green-light);
+            transition: all 0.3s;
+        }
+        .video-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px var(--shadow);
+        }
+        .video-embed {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            margin-bottom: 1rem;
+            background: #000;
+        }
+        .video-embed iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .video-info {
+            padding: 0 0.5rem;
+        }
+        .video-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--green-dark);
+            margin-bottom: 0.5rem;
+        }
+        .video-meta {
+            display: flex;
+            gap: 1.5rem;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 0.8rem;
+            flex-wrap: wrap;
+        }
+        .video-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .video-desc {
+            color: var(--green-deep);
+            line-height: 1.7;
+            font-size: 0.95rem;
+        }
+        .video-intro {
+            background: linear-gradient(135deg, var(--cream), white);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border: 2px dashed var(--green-light);
+            text-align: center;
+        }
+        .video-intro h2 {
+            color: var(--green-dark);
+            margin-bottom: 0.8rem;
+        }
+        .video-intro p {
+            color: var(--green-deep);
+            line-height: 1.7;
+        }
+        .video-thumbnail-emoji {
+            display: none;
+        }

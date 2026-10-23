@@ -1,20 +1,32 @@
 // 导航栏渲染逻辑 - 原生 JS 版（不再依赖 Vue，减少约 580KB 加载）
-(function() {
+(function () {
+    'use strict';
+    var esc = (window.GD && GD.escapeHtml) || function (s) { return String(s == null ? '' : s); };
+
     // 获取当前页面文件名，用于高亮 active
-    const path = window.location.pathname;
-    let currentPage = path.split('/').pop();
-    // 根路径（https://xxx.com/ 或 https://xxx.com/xiaolu-blog/）默认是 index.html
+    var path = window.location.pathname;
+    var currentPage = path.split('/').pop();
     if (currentPage === '' || currentPage.endsWith('/') || currentPage === 'xiaolu-blog') {
         currentPage = 'index.html';
     }
 
-    const ul = document.querySelector('#main-navbar');
+    var ul = document.querySelector('#main-navbar');
     if (!ul) return;
 
+    // navbar.json 是仓库里的数据，但也不能直接当 HTML 拼
+    function safeUrl(url) {
+        var s = String(url || '');
+        if (/^[A-Za-z0-9._\/-]+\.html$/.test(s)) return s;
+        if (/^https?:\/\//i.test(s)) return s;
+        return '#';
+    }
+
     function renderNav(list) {
-        ul.innerHTML = list.map(item => {
-            const isActive = item.url === currentPage;
-            return '<li><a href="' + item.url + '"' + (isActive ? ' class="active"' : '') + '>' + item.title + '</a></li>';
+        ul.innerHTML = list.map(function (item) {
+            var href = safeUrl(item.url);
+            var isActive = href === currentPage;
+            return '<li><a href="' + esc(href) + '"' + (isActive ? ' class="active"' : '') + '>' +
+                esc(item.title) + '</a></li>';
         }).join('');
     }
 
@@ -33,13 +45,10 @@
     }
 
     fetch('data/navbar.json')
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (Array.isArray(data) && data.length) {
-                renderNav(data);
-            } else {
-                renderFallback();
-            }
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (Array.isArray(data) && data.length) renderNav(data);
+            else renderFallback();
         })
-        .catch(function() { renderFallback(); });
+        .catch(function () { renderFallback(); });
 })();

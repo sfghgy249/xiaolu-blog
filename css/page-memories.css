@@ -1,0 +1,135 @@
+.memory-card {
+            background: white;
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px var(--shadow);
+            border: 1px solid #C8E6C9;
+            border-left: 4px solid var(--green-main);
+            transition: all 0.3s;
+        }
+        .memory-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 6px 20px var(--shadow);
+        }
+        .memory-card.group-type {
+            border-left-color: #64B5F6;
+            background: linear-gradient(135deg, #FAFDFF, white);
+        }
+        .memory-date {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--green-light), var(--green-main));
+            color: white;
+            padding: 0.3rem 1rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+        .type-badge {
+            display: inline-block;
+            padding: 0.25rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+            vertical-align: middle;
+        }
+        .type-badge.memory {
+            background: #E8F5E9;
+            color: var(--green-dark);
+            border: 1px solid var(--green-light);
+        }
+        .type-badge.group {
+            background: #E3F2FD;
+            color: #1565C0;
+            border: 1px solid #90CAF9;
+        }
+        .memory-title {
+            color: var(--green-dark);
+            font-size: 1.3rem;
+            margin-bottom: 0.8rem;
+            margin-top: 0.5rem;
+            font-weight: bold;
+        }
+        .topic-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .topic-chip {
+            background: linear-gradient(135deg, #E8F5E9, #F1F8E9);
+            color: var(--green-dark);
+            padding: 0.35rem 0.9rem;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            border: 1px solid var(--green-light);
+        }
+        .topic-chip::before {
+            content: "💬 ";
+        }
+        .memory-content {
+            color: var(--green-deep);
+            line-height: 1.8;
+        }
+        .memory-content p {
+            margin-bottom: 0.5rem;
+        }
+        .memory-tags {
+            margin-top: 1rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .memory-tag {
+            background: var(--cream);
+            color: var(--green-main);
+            padding: 0.2rem 0.7rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            border: 1px solid var(--green-light);
+        }
+        .memory-intro {
+            background: linear-gradient(135deg, var(--cream), white);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 2px dashed var(--green-light);
+            text-align: center;
+        }
+        .memory-intro h2 {
+            color: var(--green-dark);
+            margin-bottom: 0.8rem;
+        }
+        .memory-intro p {
+            color: var(--green-deep);
+            line-height: 1.7;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 0.6rem;
+            margin-bottom: 1.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .tab-btn {
+            background: white;
+            border: 2px solid var(--green-light);
+            color: var(--green-dark);
+            padding: 0.5rem 1.3rem;
+            border-radius: 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s;
+            font-family: inherit;
+        }
+        .tab-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px var(--shadow);
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--green-light), var(--green-main));
+            color: white;
+            border-color: var(--green-main);
+        }

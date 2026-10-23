@@ -1,0 +1,60 @@
+.about-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px var(--shadow);
+            border: 1px solid #C8E6C9;
+            margin-bottom: 1.5rem;
+        }
+        .about-card h3 {
+            color: var(--green-dark);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px dashed var(--green-light);
+        }
+        .about-card p, .about-card li {
+            color: var(--green-deep);
+            line-height: 1.8;
+            margin-bottom: 0.8rem;
+        }
+        .about-card ul {
+            padding-left: 1.5rem;
+        }
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .info-item {
+            background: var(--cream);
+            padding: 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--green-light);
+        }
+        .info-label {
+            font-size: 0.85rem;
+            color: #81C784;
+            margin-bottom: 0.3rem;
+        }
+        .info-value {
+            font-weight: bold;
+            color: var(--green-dark);
+        }
+        .github-link {
+            display: inline-block;
+            padding: 0.6rem 1.4rem;
+            background: linear-gradient(135deg, #90EE90, #32CD32);
+            color: white;
+            border: 1px solid #228B22;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 3px 10px var(--shadow);
+            transition: all 0.3s;
+        }
+        .github-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px var(--shadow);
+            background: linear-gradient(135deg, #32CD32, #228B22);
+        }

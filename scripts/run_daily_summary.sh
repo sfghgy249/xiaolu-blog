@@ -9,14 +9,16 @@
 #       请勿依赖硬编码绝对路径（仓库曾用名 lvba-blog，已统一改为 xiaolu-blog）。
 # ============================================================
 
-set -e
+set -euo pipefail
 
-# 外网代理（访问 GitHub 需要），已注入环境则不覆盖
-PROXY_HOST="http://192.168.0.92:18081"
-export http_proxy="${http_proxy:-$PROXY_HOST}"
-export https_proxy="${https_proxy:-$PROXY_HOST}"
-export HTTP_PROXY="${HTTP_PROXY:-$PROXY_HOST}"
-export HTTPS_PROXY="${HTTPS_PROXY:-$PROXY_HOST}"
+# 外网代理：需要就走环境变量 PROXY 传进来，不配则直连。
+# 原来把内网地址写死在这里，仓库是公开的。
+if [ -n "${PROXY:-}" ]; then
+    export http_proxy="${http_proxy:-$PROXY}"
+    export https_proxy="${https_proxy:-$PROXY}"
+    export HTTP_PROXY="${HTTP_PROXY:-$PROXY}"
+    export HTTPS_PROXY="${HTTPS_PROXY:-$PROXY}"
+fi
 
 # 配置
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -44,7 +46,9 @@ mkdir -p data/daily_log
 
 # 执行总结脚本（总结昨天，自动推送）
 export GH_TOKEN="$GH_TOKEN"
-/usr/bin/python3 "$SCRIPT_DIR/daily_memory_summary.py" --auto-push
+# 解释器统一从 PYTHON 取，别一边写死 /usr/bin/python3 一边 command -v
+PYTHON="${PYTHON:-$(command -v python3 || echo python3)}"
+"$PYTHON" "$SCRIPT_DIR/daily_memory_summary.py" --auto-push
 
 echo "[$(date '+%Y-%m-%d %H:%M:%S')] 完成"
 echo ""

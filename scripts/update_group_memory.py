@@ -35,31 +35,18 @@ import subprocess
 import argparse
 from datetime import datetime
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common
+
 # ========== 隐私脱敏规则（群聊记忆专用，比通用版更严格） ==========
 # 顺序敏感：先处理结构化模式，再处理通用数字
 # 注意：所有占位符统一使用「」全角括号，避免被后续的【】昵称规则二次匹配
 SENSITIVE_PATTERNS = [
-    # GitHub Token 等密钥
-    (r'ghp_[a-zA-Z0-9]{20,}', '「已隐藏」'),
-    (r'[a-zA-Z0-9_-]{24}\.[a-zA-Z0-9_-]{6}\.[a-zA-Z0-9_-]{27,}', '「已隐藏」'),  # 通用token
-    # 邮箱
-    (r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', '「邮箱」'),
-    # 链接（http/https/www.）
-    (r'https?://\S+', '「链接」'),
+    # 数字、密钥、邮箱、链接、@提及 全部由 common.PRIVACY_RULES 处理，这里只留它没有的：
+    # 内网 IP
+    (r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b', '「IP地址」'),
+    # www 开头的裸链接
     (r'www\.\S+', '「链接」'),
-    # IP 地址
-    (r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', '「IP地址」'),
-    # 手机号（11位，先于QQ号匹配）
-    (r'1[3-9]\d{9}', '「手机号」'),
-    # 群号显式表述
-    (r'群号[:：]?\s*\d+', '群号「已隐藏」'),
-    (r'群\s*[:：]\s*\d{5,}', '群「已隐藏」'),
-    # QQ 号显式表述
-    (r'[Qq]{2}\s*号?[:：]?\s*\d{5,12}', 'QQ「已隐藏」'),
-    # 裸 QQ 号（5-12位数字）
-    (r'(?<!\d)[1-9]\d{4,11}(?!\d)', '「QQ号」'),
-    # @提及
-    (r'@[^\s@，。！？、：:"\'\[\]【】()（）]{1,20}', '「群友」'),
     # 【昵称】 引用格式（仅匹配全角【】，不会误伤已替换的「」占位符）
     (r'【[^\s【】]{1,15}】\s*[:：]?', '「群友」 '),
     # “昵称：发言” 格式（行首或句号后的 2-10 字符昵称 + 冒号）
@@ -111,8 +98,8 @@ def clean_markdown(text: str) -> str:
 
 
 def desensitize(text: str) -> str:
-    """隐私脱敏：去除一切可能的个人隐私信息"""
-    result = text
+    """隐私脱敏：先过 common 的统一规则，再跑这里额外的人名/昵称规则。"""
+    result = common.redact(text)
     for pattern, replacement in SENSITIVE_PATTERNS:
         result = re.sub(pattern, replacement, result)
     # 清理脱敏后可能产生的多余空白
@@ -137,38 +124,34 @@ def generate_tags(content: str) -> list:
 
 
 def load_entries(json_path: str) -> list:
-    if not os.path.exists(json_path):
-        return []
-    with open(json_path, 'r', encoding='utf-8') as f:
-        return json.load(f)
+    return common.read_json(json_path, []) or []
 
 
 def save_entries(entries: list, json_path: str):
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(entries, f, ensure_ascii=False, indent=4)
-        f.write('\n')
+    common.write_json(json_path, entries)
 
 
 def git_push(repo_dir: str, date_str: str) -> bool:
-    """提交并推送到 origin/main"""
-    proxy = 'http://192.168.0.92:18081'
+    """提交并推送到 origin/main。代理和凭据都从 common 取，代码里不再写内网地址。"""
+    proxy = common.get_proxy()
     env = dict(os.environ)
-    env.setdefault('http_proxy', proxy)
-    env.setdefault('https_proxy', proxy)
-    env.setdefault('HTTP_PROXY', proxy)
-    env.setdefault('HTTPS_PROXY', proxy)
+    if proxy:
+        for k in ('http_proxy', 'https_proxy', 'HTTP_PROXY', 'HTTPS_PROXY'):
+            env.setdefault(k, proxy)
     try:
-        subprocess.run(['git', 'add', 'data/group_memory.json'],
-                       cwd=repo_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'commit', '-m',
-                        f'docs: {date_str} 群聊记忆更新'],
-                       cwd=repo_dir, check=True, capture_output=True)
-        subprocess.run(['git', 'push', 'origin', 'main'],
-                       cwd=repo_dir, check=True, capture_output=True, env=env)
+        if not common.git_commit(repo_dir, f'docs: {date_str} 群聊记忆更新',
+                                 files=['data/group_memory.json']):
+            print('ℹ️  没有变化需要提交')
+            return False
+        token = common.get_gh_token()
+        if token:
+            common.git_push(repo_dir, token)
+        else:
+            common.run(['git', 'push', 'origin', 'main'], cwd=repo_dir, env=env)
         print('✅ 已提交并推送到 GitHub，Pages 将在几分钟内部署')
         return True
-    except subprocess.CalledProcessError as e:
-        print(f'⚠️ Git 操作失败: {e.stderr.decode(errors="ignore") if e.stderr else e}')
+    except Exception as e:
+        print(f'⚠️ Git 操作失败: {e}')
         return False
 
 
